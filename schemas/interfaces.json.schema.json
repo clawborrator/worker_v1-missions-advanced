@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "interfaces.json",
+  "description": "Declares the typed contracts between modules. Locked at end of Phase 1.",
+  "type": "object",
+  "required": ["interfaces"],
+  "additionalProperties": false,
+  "properties": {
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "owner_module", "consumers", "language", "contract"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Stable kebab-case identifier for this interface contract."
+          },
+          "owner_module": {
+            "type": "string",
+            "description": "The module id that owns and exports this interface."
+          },
+          "consumers": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Module ids that consume this interface. The orchestrator uses this to populate UPSTREAM_ARTIFACTS for each consumer's prompt."
+          },
+          "language": {
+            "type": "string",
+            "enum": ["go", "typescript", "python", "rust", "protobuf", "openapi", "json-schema", "other"],
+            "description": "Language of the typed contract. Determines how the orchestrator's downstream artifact (under .mission/artifacts/) is formatted."
+          },
+          "contract": {
+            "type": "string",
+            "description": "The typed contract itself, embedded as a string. For Go that means an interface declaration; for OpenAPI, a YAML snippet; etc. Long contracts may also live in .mission/artifacts/<id>-contract.<ext> and this field becomes the inline excerpt."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional prose elaboration (preconditions, postconditions, error semantics)."
+          }
+        }
+      }
+    }
+  }
+}

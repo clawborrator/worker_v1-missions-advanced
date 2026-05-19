@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scaffold-inventory.json",
+  "description": "Catalogs existing libraries the project should reuse rather than reimplement. Produced by scaffold-audit in Phase 0.",
+  "type": "object",
+  "required": ["scaffolds"],
+  "additionalProperties": false,
+  "properties": {
+    "scaffolds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "purpose", "language", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Stable identifier. Referenced from modules.json's uses_scaffold[]."
+          },
+          "path": {
+            "type": "string",
+            "description": "Filesystem path (host-side) OR git URL where the scaffold lives."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "What this scaffold provides. One-sentence operator-readable."
+          },
+          "language": {
+            "type": "string",
+            "enum": ["go", "typescript", "python", "rust", "c", "cpp", "other"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["tested", "untested", "test-rig-only", "needs-fixes"],
+            "description": "tested: validated and ready to depend on. untested: present but not validated. test-rig-only: was used to test something else and isn't a library you'd ship. needs-fixes: requires patches before depending on."
+          },
+          "known_issues": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Bugs / limitations the scaffold-audit role found. Module-builders see these in their UPSTREAM_ARTIFACTS."
+          },
+          "version": {
+            "type": "string",
+            "description": "Version pin if applicable (e.g. git SHA, semver tag)."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Anything else module-builders should know."
+          }
+        }
+      }
+    }
+  }
+}

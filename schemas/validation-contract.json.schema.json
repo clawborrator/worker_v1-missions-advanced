@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "validation-contract.json",
+  "description": "Per-module assertions split by validator type. Locked at end of Phase 2.",
+  "type": "object",
+  "required": ["assertions"],
+  "additionalProperties": false,
+  "properties": {
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "module", "description", "validator"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*-a[0-9]+$",
+            "description": "<module-id>-a<n>. e.g. auth-a1, ui-a3."
+          },
+          "module": {
+            "type": "string",
+            "description": "Which module this assertion belongs to. Matches a module id in modules.json."
+          },
+          "description": {
+            "type": "string",
+            "description": "What to verify. Concrete, testable. e.g. 'a POST to /signup with valid input creates exactly one row in users and returns 201 with the user's id'."
+          },
+          "validator": {
+            "type": "string",
+            "enum": ["scrutiny", "usertest", "design-review", "hardware-test"]
+          },
+          "evidence_required": {
+            "type": "string",
+            "description": "What evidence the validator should produce (test name, screenshot, log excerpt, sensor reading). Optional but recommended."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "modules.json",
+  "description": "Declares modules and their dependency DAG. Locked at end of Phase 1.",
+  "type": "object",
+  "required": ["modules"],
+  "additionalProperties": false,
+  "properties": {
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "purpose", "path", "depends_on", "public_api"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Stable kebab-case identifier. Used in branch names, state.json, validation contract."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "One-sentence statement of what this module does. Operator-readable."
+          },
+          "path": {
+            "type": "string",
+            "description": "Repo-relative directory the module-builder writes inside. Must NOT overlap with any other module's path."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of other module ids this module imports from. The orchestrator's DAG executor reads this to compute waves."
+          },
+          "public_api": {
+            "type": "string",
+            "description": "Prose description of the externally-visible API. The interfaces.json file holds the typed contract; this is the human summary."
+          },
+          "uses_scaffold": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Scaffold library ids from scaffold-inventory.json this module is expected to reuse rather than reimplement.",
+            "default": []
+          },
+          "validators": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["scrutiny", "usertest", "design-review", "hardware-test"]
+            },
+            "description": "Which validator roles must pass for this module."
+          },
+          "acceptance_criteria_count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Rough estimate of how many assertions this module will need in validation-contract.json. Helps the orchestrator scope phase 2."
+          }
+        }
+      }
+    }
+  }
+}

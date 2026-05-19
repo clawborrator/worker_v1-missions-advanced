@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "state.json",
+  "description": "Mission state, updated after every transition. Cross-checked against checkpoint.json on orchestrator resume.",
+  "type": "object",
+  "required": ["missionId", "repoUrl", "orchRouting", "phase", "completedModules", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "missionId":         { "type": "string" },
+    "repoUrl":           { "type": "string", "format": "uri" },
+    "orchRouting":       { "type": "string", "description": "The orchestrator's clawborrator routing name (without leading @)." },
+    "phase": {
+      "type": "string",
+      "enum": ["0-ingest", "1-scope", "2-validation", "3-build", "3.5-integration", "3.6-design", "3.7-hardware", "4-finalize", "completed", "aborted"]
+    },
+    "currentWave":       { "type": ["integer", "null"], "description": "1-indexed wave number during phase 3. Null outside phase 3." },
+    "currentWaveModules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Module ids spawned in the current wave but not yet handed off."
+    },
+    "completedModules":  { "type": "array", "items": { "type": "string" } },
+    "respawns":          {
+      "type": "object",
+      "description": "Map of {worker-key: respawn-count}. worker-key is '<role>:<module-id-or-tag>'. Used to enforce max-3-respawns.",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "status":            { "type": "string", "enum": ["in_progress", "blocked_on_operator", "completed", "aborted"] },
+    "startedAt":         { "type": "string", "format": "date-time" },
+    "completedAt":       { "type": "string", "format": "date-time" }
+  }
+}

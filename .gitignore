@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+*.swp
+*.swo
+node_modules/
+__pycache__/

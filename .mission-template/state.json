@@ -1,0 +1,12 @@
+{
+  "missionId":         "<set at mission start>",
+  "repoUrl":           "<set at mission start>",
+  "orchRouting":       "<set at mission start>",
+  "phase":             "0-ingest",
+  "currentWave":       null,
+  "currentWaveModules": [],
+  "completedModules":  [],
+  "respawns":          {},
+  "status":            "in_progress",
+  "startedAt":         "<set at mission start>"
+}
