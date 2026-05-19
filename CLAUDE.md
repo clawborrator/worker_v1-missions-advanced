@@ -35,36 +35,60 @@ mission if the target repo uses different folder names.
 
 ## Prerequisite
 
-Your own environment must have the spawn-env vars already loaded.
-The operator launches your container with
-`docker run --env-file ~/.clawborrator-spawn.env`, which the host
-shell parses and injects into your env at startup. You do NOT
-need to (and CANNOT — the file isn't bind-mounted) read the host
-file directly.
+Two parts:
 
-Required vars in your environment:
+**1. Your own process env** has these (loaded at container startup
+via `docker run --env-file ~/.clawborrator-spawn.env`):
 
-- **One** of the three Anthropic auth modes:
-  - `CLAUDE_CODE_OAUTH_TOKEN` (preferred — supports clawborrator
-    channels; from `claude setup-token`)
-  - `ANTHROPIC_API_KEY` (works but disables channels, so spawned
-    workers can't `submit_handoff` — mission will get stuck)
-  - `ANTHROPIC_ACCESS_TOKEN` (legacy OAuth fallback)
 - `CLAWBORRATOR_TOKEN`
 - `CLAWBORRATOR_HUB_URL`
-- `REPO_PAT` (used by spawned workers for git push)
+- `REPO_PAT`
 - `GIT_USER_EMAIL`
 - `GIT_USER_NAME`
 
-Verify: `printenv | grep -E '^(CLAUDE_CODE|ANTHROPIC|CLAWBORRATOR|REPO_PAT|GIT_USER)'`.
+Plus your own Anthropic auth (`CLAUDE_CODE_OAUTH_TOKEN`,
+`ANTHROPIC_API_KEY`, or `ANTHROPIC_ACCESS_TOKEN`) — but **Claude
+Code strips these from its Bash tool's env after startup as a
+security default.** They are present at the container process
+level but invisible to anything you run via the Bash tool. Don't
+try to printenv them; you'll see empty values even when they're
+actually set.
 
-If `ANTHROPIC_API_KEY` is the only auth mode present, **warn the
-operator** that the mission needs `CLAUDE_CODE_OAUTH_TOKEN` (or
-`ANTHROPIC_ACCESS_TOKEN`) for clawborrator channels to work —
-without channels, spawned workers can't submit handoffs and
-you'll never know they finished. Don't proceed silently.
+**2. `/spawn.env` is bind-mounted into your container.** This is
+the operator's `~/.clawborrator-spawn.env` mounted read-only.
+Spawn scripts (`bin/spawn-*.sh`) source this file at startup to
+re-populate the stripped auth vars before invoking
+`docker run -e VAR` for each spawned worker.
 
-If no auth mode is present, halt and ask. Do not invent values.
+Verify before spawning:
+
+```bash
+ls -la /spawn.env                     # should exist, be readable by your container user
+grep -c CLAUDE_CODE_OAUTH_TOKEN /spawn.env  # should return 1
+```
+
+If `/spawn.env` is missing or unreadable, halt and ask the
+operator to relaunch the orchestrator with:
+
+```
+-v $HOME/.clawborrator-spawn.env:/spawn.env:ro
+```
+
+added to the docker run, AND `chmod 644 ~/.clawborrator-spawn.env`
+on the host so the container's user can read it. (Mode 600 was
+the prior convention but the file's contents are already protected
+by the operator's user-account boundary on the host; making it
+mode 644 just lets the container's worker user read it.)
+
+You can also verify your own non-auth env via Bash:
+
+```bash
+printenv | grep -E '^(CLAWBORRATOR|REPO_PAT|GIT_USER)'
+```
+
+The auth-mode vars (CLAUDE_CODE_OAUTH_TOKEN etc.) will show empty
+via Bash even when set — that's expected. Trust the `/spawn.env`
+file as the source of truth for those.
 
 When you spawn workers via `/playbook/bin/spawn-*.sh`, those
 scripts inherit your env and use `docker run -e VAR` (no value)

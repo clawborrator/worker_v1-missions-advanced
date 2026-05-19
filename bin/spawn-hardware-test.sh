@@ -30,6 +30,14 @@
 
 set -euo pipefail
 
+# Re-source spawn-env (see spawn-architect.sh for full explanation).
+if [[ -r /spawn.env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source /spawn.env
+  set +a
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATE="$SCRIPT_DIR/templates/hardware-test-prompt.tmpl"
 

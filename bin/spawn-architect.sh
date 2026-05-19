@@ -29,6 +29,19 @@
 
 set -euo pipefail
 
+# Re-source spawn-env so this script's bash has the Anthropic auth
+# vars Claude Code strips from its Bash tool's env after startup
+# (a CC security default). The /spawn.env path is the operator's
+# `~/.clawborrator-spawn.env` bind-mounted read-only into the
+# orchestrator container. `set -a` auto-exports sourced vars so the
+# `docker run -e VAR` pass-through below picks them up.
+if [[ -r /spawn.env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source /spawn.env
+  set +a
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATE="$SCRIPT_DIR/templates/architect-prompt.tmpl"
 

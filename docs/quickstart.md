@@ -40,6 +40,15 @@ mission's commit history.
 
 ### 2. Spawn the orchestrator container
 
+First, make the host's spawn-env file readable by the container's
+worker user:
+
+```bash
+chmod 644 ~/.clawborrator-spawn.env
+```
+
+Then run:
+
 ```bash
 docker run -dt --rm \
   --name missions-advanced-<your-mission-tag> \
@@ -51,6 +60,7 @@ docker run -dt --rm \
   -e CLAUDE_INITIAL_PROMPT="You are the missions-advanced orchestrator. Read /playbook/CLAUDE.md carefully — that is your playbook. Wait for the operator's mission brief before doing anything." \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v $HOME/worker_v1-missions-advanced:/playbook:ro \
+  -v $HOME/.clawborrator-spawn.env:/spawn.env:ro \
   ladder99/clawborrator-worker:latest
 ```
 
@@ -58,11 +68,15 @@ Notes:
 - `REPO_URL` = target repo. The orchestrator's `/workspace/repo`
   IS the working repo where `.mission/state.json` lives.
 - `/playbook` = host clone of this toolkit. Read-only.
-- Spawn-env vars are loaded into the orchestrator's environment
-  at startup via `--env-file ~/.clawborrator-spawn.env` (host
-  shell's CLI parses it; no in-container access needed). Spawned
-  workers inherit them via `docker run -e VAR` (pass-through)
-  inside the spawn scripts.
+- `/spawn.env` = host's spawn-env file. Spawn scripts source this
+  to re-populate Anthropic auth vars that Claude Code strips from
+  its Bash tool env after startup (security default). Without this
+  mount, spawned workers will have no Anthropic auth and fail
+  immediately.
+- `--env-file ~/.clawborrator-spawn.env` (top of run) loads the
+  non-auth vars (CLAWBORRATOR_TOKEN, REPO_PAT, GIT_USER_*) into
+  the orchestrator's bash tool env directly. Both mechanisms are
+  needed: --env-file for non-auth, sourced /spawn.env for auth.
 - No `CLAWBORRATOR_EPHEMERAL=1`. The orchestrator is long-lived.
 
 ### 3. Brief the orchestrator

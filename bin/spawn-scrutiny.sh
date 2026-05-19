@@ -8,6 +8,14 @@
 
 set -euo pipefail
 
+# Re-source spawn-env (see spawn-architect.sh for full explanation).
+if [[ -r /spawn.env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source /spawn.env
+  set +a
+fi
+
 FEATURE_ID="${1:?usage: spawn-scrutiny.sh <feature-id> <commit-sha>}"
 COMMIT_SHA="${2:?usage: spawn-scrutiny.sh <feature-id> <commit-sha>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
