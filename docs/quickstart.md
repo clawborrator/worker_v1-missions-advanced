@@ -48,10 +48,11 @@ docker run -dt --rm \
   -e MODEL=sonnet \
   -e CLAUDE_SKIP_PERMISSIONS=1 \
   -e REPO_URL=https://github.com/<owner>/<target-repo> \
-  -e CLAW_SPAWN_ENV=$HOME/.clawborrator-spawn.env \
+  -e CLAW_SPAWN_ENV=/clawborrator-spawn.env \
   -e CLAUDE_INITIAL_PROMPT="You are the missions-advanced orchestrator. Read /playbook/CLAUDE.md carefully — that is your playbook. Wait for the operator's mission brief before doing anything." \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v $HOME/worker_v1-missions-advanced:/playbook:ro \
+  -v $HOME/.clawborrator-spawn.env:/clawborrator-spawn.env:ro \
   ladder99/clawborrator-worker:latest
 ```
 
@@ -59,9 +60,11 @@ Notes:
 - `REPO_URL` = target repo. The orchestrator's `/workspace/repo`
   IS the working repo where `.mission/state.json` lives.
 - `/playbook` = host clone of this toolkit. Read-only.
-- `CLAW_SPAWN_ENV` points at the HOST path of spawn-env (docker
-  daemon resolves bind-mount paths from host filesystem, so
-  workers' `docker run --env-file <this>` needs the host path).
+- `/clawborrator-spawn.env` = the spawn-env file bind-mounted at
+  a fixed in-container path. `CLAW_SPAWN_ENV` points the spawn
+  scripts there. Required because `docker run --env-file <path>`
+  is parsed by the docker CLI inside the orchestrator (not the
+  daemon on the host), so the file must be readable from inside.
 - No `CLAWBORRATOR_EPHEMERAL=1`. The orchestrator is long-lived.
 
 ### 3. Brief the orchestrator
