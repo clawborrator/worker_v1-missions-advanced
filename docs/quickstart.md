@@ -7,39 +7,82 @@ End-to-end walkthrough of running a mission through
 ## What you'll need before starting
 
 1. **A target repo URL** + PAT with push access. The orchestrator
-   commits `.mission/` state and the deliverable code here. Can be
-   an empty repo; the architect + module-builders populate it.
-2. **A folder of planning docs.** Markdown, conversation logs, RFCs,
-   specs. Whatever the architect should ingest. Empty allowed but
-   strongly discouraged for projects at this scale.
-3. **Optional: a folder of scaffold libraries** to reuse rather
-   than reimplement. Each subdirectory is one library; the
-   scaffold-audit role catalogs them.
-4. **A clawborrator session running as the orchestrator.** Two ways:
-   - Locally: open this directory in Claude Code, the `.claude/`
-     setup makes it read `CLAUDE.md` as the playbook.
-   - Published agent: run a `worker_v1` container against this repo
-     with `CLAWBORRATOR_ROUTING_NAME=missions-advanced-<your-tag>`.
+   clones this as its own `/workspace/repo`. Conventionally the
+   target repo carries:
+   - `planning-docs/` — input to the architect role
+   - `scaffold-libs/` — input to the scaffold-audit role
+   - `PROMPT.md` — the operator's mission charter
+   - existing `README.md` or other operator content is fine
+2. **A target host with docker** + the operator's
+   `~/.clawborrator-spawn.env` file in place. The orchestrator
+   container spawns worker containers laterally on this host.
+3. **A local clone of `worker_v1-missions-advanced` on the target
+   host.** The orchestrator bind-mounts this as its playbook;
+   `bin/spawn-*.sh` and `templates/*.tmpl` need to be filesystem-
+   accessible to the orchestrator.
 
 ## Step-by-step
 
-### 1. Brief the orchestrator
+### 1. Prep the target host
 
-Send a message describing the goal plus paths:
+SSH to the host where the orchestrator + workers will run.
+
+```bash
+cd ~
+git clone https://github.com/clawborrator/worker_v1-missions-advanced
+# (The target repo will be cloned by the orchestrator container
+#  itself via REPO_URL; no need to clone it on the host.)
+```
+
+Confirm prereqs: docker installed, `~/.clawborrator-spawn.env`
+exists (mode 600 with all six secrets), enough disk for the
+mission's commit history.
+
+### 2. Spawn the orchestrator container
+
+```bash
+docker run -dt --rm \
+  --name missions-advanced-<your-mission-tag> \
+  --env-file ~/.clawborrator-spawn.env \
+  -e CLAWBORRATOR_ROUTING_NAME=missions-advanced-<your-mission-tag> \
+  -e MODEL=sonnet \
+  -e CLAUDE_SKIP_PERMISSIONS=1 \
+  -e REPO_URL=https://github.com/<owner>/<target-repo> \
+  -e CLAW_SPAWN_ENV=$HOME/.clawborrator-spawn.env \
+  -e CLAUDE_INITIAL_PROMPT="You are the missions-advanced orchestrator. Read /playbook/CLAUDE.md carefully — that is your playbook. Wait for the operator's mission brief before doing anything." \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $HOME/worker_v1-missions-advanced:/playbook:ro \
+  ladder99/clawborrator-worker:latest
+```
+
+Notes:
+- `REPO_URL` = target repo. The orchestrator's `/workspace/repo`
+  IS the working repo where `.mission/state.json` lives.
+- `/playbook` = host clone of this toolkit. Read-only.
+- `CLAW_SPAWN_ENV` points at the HOST path of spawn-env (docker
+  daemon resolves bind-mount paths from host filesystem, so
+  workers' `docker run --env-file <this>` needs the host path).
+- No `CLAWBORRATOR_EPHEMERAL=1`. The orchestrator is long-lived.
+
+### 3. Brief the orchestrator
+
+From any session with `mcp__clawborrator__route_to_peer` access:
 
 ```
-I want to build <one-paragraph description>.
-
-Planning docs: /abs/path/to/planning-docs
-Scaffold libs: /abs/path/to/test-repos (optional)
-Target repo:   https://github.com/me/my-new-system
-Mission id:    my-system-1
+route_to_peer({
+  peer: "@missions-advanced-<your-mission-tag>",
+  mode: "ask",
+  prompt: "Begin mission <id>:
+    Target repo URL: https://github.com/<owner>/<target-repo>
+    Mission ID: <id>
+    Goal: <one paragraph, or `read PROMPT.md`>"
+})
 ```
 
 The orchestrator confirms via `ask_question` and writes
 `.mission/state.json` to the target repo.
 
-### 2. Phase 0: ingest
+### 4. Phase 0: ingest
 
 The orchestrator spawns `architect` + `scaffold-audit` in parallel.
 Each writes its artifacts to its own branch in the target repo.
@@ -60,7 +103,7 @@ On revise, the orchestrator respawns the relevant role with your
 notes as `REVISION_NOTES`. Max 2 revisions per role before
 escalating.
 
-### 3. Phase 1: scope
+### 5. Phase 1: scope
 
 After approval, the orchestrator computes the topological order
 over `modules.json`'s `depends_on` graph. Shows you the proposed
@@ -74,7 +117,7 @@ Wave 3: cmd/myapp (integration)
 
 You approve or revise.
 
-### 4. Phase 2: validation contract
+### 6. Phase 2: validation contract
 
 Orchestrator generates per-module assertions split by validator
 type (scrutiny / usertest / design-review / hardware-test). It
@@ -82,7 +125,7 @@ asks you to confirm coverage, in particular that every UI-bearing
 module has design-review assertions and every hardware-touching
 module has hardware-test assertions.
 
-### 5. Phase 3: parallel module implementation
+### 7. Phase 3: parallel module implementation
 
 The orchestrator dispatches each wave concurrently. Per module:
 
@@ -98,18 +141,18 @@ get an `ask_question` with options `Skip module / Manual / Abort`.
 
 Wave N+1 starts only after every module in wave N is completed.
 
-### 6. Phase 3.5: integration
+### 8. Phase 3.5: integration
 
 Single `integrator` worker wires modules at the entry point.
 `scrutiny` + `usertest` validate the integration commit.
 
-### 7. Phase 3.6: design review (UI-bearing missions only)
+### 9. Phase 3.6: design review (UI-bearing missions only)
 
 `design-review` boots the app and validates against the design
 spec on color, typography, spacing, shape. Subjective assertions
 surface to you via `ask_question` with screenshots attached.
 
-### 8. Phase 3.7: hardware test (hardware-bearing missions only)
+### 10. Phase 3.7: hardware test (hardware-bearing missions only)
 
 Operator-gated. The orchestrator asks via `ask_question`:
 `Approve hardware test` / `Skip` / `Abort`. You approve only if
@@ -119,7 +162,7 @@ and you accept the consequences of automated hardware interaction.
 On approval, `hardware-test` runs the scripted exercises.
 **Failures always escalate to you, never auto-respawn.**
 
-### 9. Phase 4: finalize
+### 11. Phase 4: finalize
 
 The orchestrator cross-references every assertion against the
 handoff history. Generates a mission report. Routes the report to

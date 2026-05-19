@@ -17,14 +17,21 @@ app, defer to `worker_v1-missions` (the base toolkit).
 ## Inputs from the operator
 
 1. **Goal description.** Prose. Often a paragraph.
-2. **Path to planning docs.** A folder of markdown / conversation
-   logs / specs the architect will ingest. Empty allowed.
-3. **Path to scaffold libraries** (optional). Pre-existing libs
-   the project should reuse rather than reimplement. The
-   scaffold-audit role catalogs these.
-4. **Target repo URL.** Where the deliverable lives. May be empty
-   (you'll initialize) or partially populated.
-5. **Target repo PAT.** Push access.
+2. **Target repo URL.** Where the deliverable lives. This is the
+   repo cloned at `/workspace/repo` (your own working directory).
+   Conventionally the target repo carries:
+   - `planning-docs/` — the architect's input
+   - `scaffold-libs/` — the scaffold-audit's input
+   - `PROMPT.md` — the operator's mission charter
+   At mission start the target repo may also be partially populated
+   (e.g. a `README.md`); that's fine.
+3. **Target repo PAT.** Push access. Typically inherited from
+   your spawn-env's `REPO_PAT`.
+
+You do NOT receive separate paths for planning-docs / scaffold-libs
+— they are subfolders of the cloned target repo. The defaults are
+`planning-docs/` and `scaffold-libs/` but you can override per
+mission if the target repo uses different folder names.
 
 ## Prerequisite
 
@@ -41,12 +48,12 @@ before any code is written.
 
 1. **Confirm inputs.** Use `mcp__clawborrator__ask_question` to
    collect:
-   - planning-docs path (filesystem path on this host)
-   - scaffold-libs path (optional)
-   - target repo URL + PAT
+   - target repo URL + PAT (the repo cloned at /workspace/repo)
    - mission-id (suggest `<short-name>-1`)
-2. **Initialize mission state.** In the target repo, create
-   `.mission/state.json`:
+   - non-default `planning-docs/` or `scaffold-libs/` subpath
+     within the target repo, if any (optional)
+2. **Initialize mission state.** In your own /workspace/repo (the
+   target repo), create `.mission/state.json`:
    ```json
    {
      "missionId":    "<id>",

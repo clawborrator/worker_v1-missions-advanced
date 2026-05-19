@@ -8,7 +8,7 @@ MISSION: {{MISSION_ID}}
 ORCHESTRATOR: {{ORCH_ROUTING}}
 
 INPUTS:
-  Planning docs path:    {{PLANNING_DOCS_PATH}}
+  Planning docs path:    {{PLANNING_DOCS_PATH}}  (inside the cloned target repo)
   Target repo URL:       {{REPO_URL}}
   Operator goal summary: {{GOAL_SUMMARY}}
   Operator notes (if respawned with revisions): {{REVISION_NOTES}}
@@ -23,10 +23,12 @@ PROCEDURES (mandatory; the orchestrator checks proceduresHonored[]):
 1. Confirm the repo is cloned at /workspace/repo (entrypoint did this).
    `cd /workspace/repo && git checkout -B mission/architect-{{MISSION_ID}}`
 
-2. Confirm the planning-docs path is mounted at /workspace/planning-docs
-   (the spawn script binds it). `ls -la /workspace/planning-docs/`
+2. Confirm the planning-docs folder exists at {{PLANNING_DOCS_PATH}}
+   (inside the cloned target repo). `ls -la {{PLANNING_DOCS_PATH}}/`
+   If it's missing, halt and submit a `failed` handoff — the operator
+   needs to populate the target repo before the mission can proceed.
 
-3. Read EVERY file in /workspace/planning-docs/ recursively. Do not
+3. Read EVERY file in {{PLANNING_DOCS_PATH}}/ recursively. Do not
    skim. For each document, capture in working memory:
    - Domain entities and their relationships
    - Functional requirements (what the system must do)

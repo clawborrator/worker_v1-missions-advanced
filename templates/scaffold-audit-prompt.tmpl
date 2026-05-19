@@ -7,7 +7,7 @@ MISSION: {{MISSION_ID}}
 ORCHESTRATOR: {{ORCH_ROUTING}}
 
 INPUTS:
-  Scaffold libs path: {{SCAFFOLD_LIBS_PATH}}
+  Scaffold libs path: {{SCAFFOLD_LIBS_PATH}}  (inside the cloned target repo)
   Target repo URL:    {{REPO_URL}}
   Operator notes:     {{OPERATOR_NOTES}}
 
@@ -18,10 +18,11 @@ OUTPUT (in the target repo's .mission/):
 PROCEDURES (mandatory):
 
 1. Confirm the repo is cloned at /workspace/repo (entrypoint did this).
-   Confirm the scaffold-libs path is mounted at
-   /workspace/scaffold-libs. `ls -la /workspace/scaffold-libs/`
+   Confirm the scaffold-libs folder exists at {{SCAFFOLD_LIBS_PATH}}
+   (inside the cloned target repo). `ls -la {{SCAFFOLD_LIBS_PATH}}/`
+   If missing, halt and submit a `failed` handoff.
 
-2. For each top-level subdirectory in /workspace/scaffold-libs/:
+2. For each top-level subdirectory in {{SCAFFOLD_LIBS_PATH}}/:
    - Identify the language (go.mod → go; package.json → typescript;
      Cargo.toml → rust; setup.py / pyproject.toml → python; etc).
    - Read its README.md or equivalent doc for the stated purpose.

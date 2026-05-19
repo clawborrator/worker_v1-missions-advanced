@@ -68,17 +68,27 @@ work within modules.
    `worker_v1-missions`.
 2. **Docker available** with `/proc` + `/sys` readable.
 3. **The target repo's PAT** (for `REPO_PAT`) has push access.
-4. **Planning docs and scaffold libraries** organized in known
-   paths the orchestrator can hand to architect / scaffold-audit
-   workers (the orchestrator asks for these in Phase 0).
+4. **The target repo conventionally contains** `planning-docs/`,
+   `scaffold-libs/`, and `PROMPT.md`. The architect and
+   scaffold-audit roles read these from inside the cloned target
+   repo; no separate host-side paths to manage.
 
 ## Usage (orchestrator-driven)
 
-The orchestrator agent reads [`CLAUDE.md`](./CLAUDE.md). You as
-the operator interact via:
+The orchestrator agent reads [`CLAUDE.md`](./CLAUDE.md). It runs
+as a long-lived `worker_v1` container with:
 
-1. Initial goal description + paths to planning docs / scaffold
-   libs / target repo.
+- `REPO_URL` = the target repo (the orchestrator's `/workspace/repo`
+  IS the target; that's where it writes `.mission/state.json`).
+- This toolkit (`worker_v1-missions-advanced`) bind-mounted at
+  `/playbook` from a host clone (the orchestrator reads
+  `/playbook/CLAUDE.md` and invokes `/playbook/bin/spawn-*.sh`).
+- `/var/run/docker.sock` bind-mounted so the orchestrator can
+  spawn worker containers laterally on the host.
+
+You as the operator interact via:
+
+1. Initial mission brief (target repo URL, mission id).
 2. Approval gates at the end of Phase 0 (requirements + modules
    + scaffold inventory) and before Phase 3.7 (hardware test).
 3. Whatever clarifying questions the orchestrator routes via
@@ -88,7 +98,8 @@ You do NOT directly invoke `bin/spawn-*.sh` — those are the
 orchestrator's tools, not yours.
 
 See [`docs/quickstart.md`](./docs/quickstart.md) for the
-end-to-end walkthrough.
+end-to-end walkthrough including the exact `docker run` for the
+orchestrator container.
 
 ## Mission state
 
