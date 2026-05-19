@@ -25,7 +25,6 @@
 #                            the right hardware tooling.
 #
 # Optional:
-#   CLAW_SPAWN_ENV          default ~/.clawborrator-spawn.env
 #   NETWORK_MODE            docker network mode (default `host` so
 #                            the binary can reach hardware on the LAN)
 
@@ -49,10 +48,13 @@ if [[ ! -f "$HARDWARE_CONFIG_PATH" ]]; then
   exit 2
 fi
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 NETWORK_MODE="${NETWORK_MODE:-host}"
 
-# SPAWN_ENV is a host path; skip local existence check.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 HARDWARE_CONFIG_CONTAINER_PATH="/workspace/hardware-config"
 
@@ -71,7 +73,11 @@ echo "WARNING: this container will interact with real hardware. Operator approva
 exec docker run -dt --rm \
   --name "$NAME" \
   --network "$NETWORK_MODE" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

@@ -19,8 +19,13 @@ TEMPLATE="$SCRIPT_DIR/templates/scrutiny-prompt.tmpl"
 : "${REPO_PAT:?REPO_PAT not set}"
 : "${ASSERTIONS:?ASSERTIONS not set}"
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${SCRUTINY_IMAGE:-ladder99/clawborrator-worker:latest}"
+
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 PROMPT=$(< "$TEMPLATE")
 PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
@@ -35,7 +40,11 @@ echo "spawning $NAME (mission=$MISSION_ID, feature=$FEATURE_ID, commit=${COMMIT_
 FEATURE_ID="$FEATURE_ID" COMMIT_SHA="$COMMIT_SHA" \
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

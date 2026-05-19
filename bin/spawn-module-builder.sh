@@ -23,8 +23,9 @@
 #                          .mission/requirements.md\n.mission/interfaces.json)
 #
 # Optional:
-#   CLAW_SPAWN_ENV        default ~/.clawborrator-spawn.env
 #   MODULE_BUILDER_IMAGE  default ladder99/clawborrator-worker:latest
+#
+# Spawn-env vars are inherited from the orchestrator's environment.
 
 set -euo pipefail
 
@@ -44,10 +45,13 @@ TEMPLATE="$SCRIPT_DIR/templates/module-builder-prompt.tmpl"
 MODULE_DEPS="${MODULE_DEPS:-(none)}"
 MODULE_SCAFFOLDS="${MODULE_SCAFFOLDS:-(none)}"
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${MODULE_BUILDER_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-# SPAWN_ENV is a host path; skip local existence check.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 PROMPT=$(< "$TEMPLATE")
 PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
@@ -66,7 +70,11 @@ NAME="mission-module-${MODULE_ID}-$(date +%s)"
 echo "spawning $NAME (mission=$MISSION_ID, module=$MODULE_ID, path=$MODULE_PATH)"
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

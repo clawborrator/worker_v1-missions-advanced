@@ -17,8 +17,9 @@
 #   ASSERTIONS            newline-joined design-review assertions
 #
 # Optional:
-#   CLAW_SPAWN_ENV        default ~/.clawborrator-spawn.env
 #   DESIGN_REVIEW_IMAGE   default ladder99/clawborrator-worker-playwright:latest
+#
+# Spawn-env vars are inherited from the orchestrator's environment.
 
 set -euo pipefail
 
@@ -39,10 +40,13 @@ if [[ ! -f "$DESIGN_SPEC_PATH" ]]; then
   exit 2
 fi
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${DESIGN_REVIEW_IMAGE:-ladder99/clawborrator-worker-playwright:latest}"
 
-# SPAWN_ENV is a host path; skip local existence check.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 DESIGN_SPEC_CONTAINER_PATH="/workspace/design-spec.md"
 
@@ -59,7 +63,11 @@ NAME="mission-design-review-${MISSION_ID}-$(date +%s)"
 echo "spawning $NAME (mission=$MISSION_ID, app-url=$APP_URL)"
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

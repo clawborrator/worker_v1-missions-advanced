@@ -19,8 +19,13 @@
 #   PLANNING_DOCS_SUBPATH default "planning-docs" — repo-relative path
 #                           the architect should read planning prose from
 #   REVISION_NOTES        if respawning after operator revisions
-#   CLAW_SPAWN_ENV        default ~/.clawborrator-spawn.env (host path)
 #   ARCHITECT_IMAGE       default ladder99/clawborrator-worker:latest
+#
+# Spawn-env: this script does NOT read ~/.clawborrator-spawn.env. The
+# orchestrator inherits the spawn-env at its own startup via
+# --env-file, and this script passes the relevant vars through with
+# `docker run -e VAR` (no value). That sidesteps the host's mode-600
+# file being unreadable from inside the orchestrator container.
 
 set -euo pipefail
 
@@ -35,13 +40,19 @@ TEMPLATE="$SCRIPT_DIR/templates/architect-prompt.tmpl"
 PLANNING_DOCS_SUBPATH="${PLANNING_DOCS_SUBPATH:-planning-docs}"
 REVISION_NOTES="${REVISION_NOTES:-(no revisions)}"
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${ARCHITECT_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-# Note: SPAWN_ENV is a HOST path (docker daemon resolves bind paths
-# from host fs). When run inside an orchestrator container, a local
-# [[ -f ]] check would always fail — skip it. docker run errors
-# clearly if the path is wrong.
+# Spawn-env keys we pass through to the spawned worker. These must
+# already be present in this script's environment (the orchestrator
+# inherited them from its own --env-file at startup). We use docker's
+# `-e VAR` pass-through (no value) instead of `--env-file <path>`
+# so we don't need the host's mode-600 spawn-env file to be readable
+# from inside the orchestrator container.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 PLANNING_DOCS_PATH="/workspace/repo/$PLANNING_DOCS_SUBPATH"
 
@@ -58,7 +69,11 @@ NAME="mission-architect-${MISSION_ID}-$(date +%s)"
 echo "spawning $NAME (mission=$MISSION_ID, planning-docs=/workspace/repo/$PLANNING_DOCS_SUBPATH inside target repo)"
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

@@ -17,8 +17,11 @@
 #   ASSERTIONS         newline-joined string of assertions for this feature
 #
 # Optional:
-#   CLAW_SPAWN_ENV     default ~/.clawborrator-spawn.env
 #   PROBE_IMAGE        default ladder99/clawborrator-worker:latest
+#
+# Spawn-env vars are inherited from the orchestrator's environment
+# (loaded at orchestrator startup via --env-file) and passed through
+# to children via `docker run -e VAR`.
 
 set -euo pipefail
 
@@ -33,14 +36,13 @@ TEMPLATE="$SCRIPT_DIR/templates/worker-prompt.tmpl"
 : "${FEATURE_SPEC:?FEATURE_SPEC not set}"
 : "${ASSERTIONS:?ASSERTIONS not set}"
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${PROBE_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-# Note: we do NOT check `[[ -f "$SPAWN_ENV" ]]` here. When this
-# script runs inside an orchestrator container, $SPAWN_ENV is a
-# HOST-side path that docker daemon resolves separately. The local
-# fs check would always fail. If the path is wrong, docker run
-# below errors clearly.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 # Render the prompt template using bash builtin substitution.
 # Pure bash, no python/perl dependency. Placeholders are literal
@@ -58,7 +60,11 @@ echo "spawning $NAME (mission=$MISSION_ID, feature=$FEATURE_ID)"
 FEATURE_ID="$FEATURE_ID" \
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \

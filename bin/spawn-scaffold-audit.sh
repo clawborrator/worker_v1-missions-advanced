@@ -17,8 +17,11 @@
 #                           to the scaffold libraries directory
 #   OPERATOR_NOTES        extra context from the operator (e.g. "ignore
 #                         the libfoo-test directory, it's just a test rig")
-#   CLAW_SPAWN_ENV        default ~/.clawborrator-spawn.env (host path)
 #   SCAFFOLD_IMAGE        default ladder99/clawborrator-worker:latest
+#
+# Spawn-env vars are passed through via `docker run -e VAR` from the
+# orchestrator's own environment (loaded at its startup via --env-file).
+# No host-side file access required.
 
 set -euo pipefail
 
@@ -32,10 +35,13 @@ TEMPLATE="$SCRIPT_DIR/templates/scaffold-audit-prompt.tmpl"
 SCAFFOLD_LIBS_SUBPATH="${SCAFFOLD_LIBS_SUBPATH:-scaffold-libs}"
 OPERATOR_NOTES="${OPERATOR_NOTES:-(none)}"
 
-SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${SCAFFOLD_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-# SPAWN_ENV is a host path; skip local existence check.
+: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
+: "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
+: "${GIT_USER_EMAIL:?not set in orchestrator env}"
+: "${GIT_USER_NAME:?not set in orchestrator env}"
 
 SCAFFOLD_LIBS_PATH="/workspace/repo/$SCAFFOLD_LIBS_SUBPATH"
 
@@ -51,7 +57,11 @@ NAME="mission-scaffold-audit-${MISSION_ID}-$(date +%s)"
 echo "spawning $NAME (mission=$MISSION_ID, scaffold-libs=/workspace/repo/$SCAFFOLD_LIBS_SUBPATH inside target repo)"
 exec docker run -dt --rm \
   --name "$NAME" \
-  --env-file "$SPAWN_ENV" \
+  -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e CLAWBORRATOR_TOKEN \
+  -e CLAWBORRATOR_HUB_URL \
+  -e GIT_USER_EMAIL \
+  -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
   -e MODEL=sonnet \
