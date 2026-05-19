@@ -44,17 +44,27 @@ file directly.
 
 Required vars in your environment:
 
-- `CLAUDE_CODE_OAUTH_TOKEN`
+- **One** of the three Anthropic auth modes:
+  - `CLAUDE_CODE_OAUTH_TOKEN` (preferred — supports clawborrator
+    channels; from `claude setup-token`)
+  - `ANTHROPIC_API_KEY` (works but disables channels, so spawned
+    workers can't `submit_handoff` — mission will get stuck)
+  - `ANTHROPIC_ACCESS_TOKEN` (legacy OAuth fallback)
 - `CLAWBORRATOR_TOKEN`
 - `CLAWBORRATOR_HUB_URL`
 - `REPO_PAT` (used by spawned workers for git push)
 - `GIT_USER_EMAIL`
 - `GIT_USER_NAME`
 
-Verify all six are set: `printenv | grep -E '^(CLAUDE_CODE|CLAWBORRATOR|REPO_PAT|GIT_USER)'`.
-If any is unset, halt and ask the operator to relaunch the
-orchestrator with a properly populated `--env-file`. Do not
-invent values.
+Verify: `printenv | grep -E '^(CLAUDE_CODE|ANTHROPIC|CLAWBORRATOR|REPO_PAT|GIT_USER)'`.
+
+If `ANTHROPIC_API_KEY` is the only auth mode present, **warn the
+operator** that the mission needs `CLAUDE_CODE_OAUTH_TOKEN` (or
+`ANTHROPIC_ACCESS_TOKEN`) for clawborrator channels to work —
+without channels, spawned workers can't submit handoffs and
+you'll never know they finished. Don't proceed silently.
+
+If no auth mode is present, halt and ask. Do not invent values.
 
 When you spawn workers via `/playbook/bin/spawn-*.sh`, those
 scripts inherit your env and use `docker run -e VAR` (no value)

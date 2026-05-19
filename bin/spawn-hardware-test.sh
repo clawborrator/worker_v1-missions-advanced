@@ -50,7 +50,10 @@ fi
 
 NETWORK_MODE="${NETWORK_MODE:-host}"
 
-: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_ACCESS_TOKEN:-}" ]]; then
+  echo "error: no Anthropic auth in env (need one of CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_ACCESS_TOKEN)" >&2
+  exit 2
+fi
 : "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
 : "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
 : "${GIT_USER_EMAIL:?not set in orchestrator env}"
@@ -74,6 +77,8 @@ exec docker run -dt --rm \
   --name "$NAME" \
   --network "$NETWORK_MODE" \
   -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e ANTHROPIC_API_KEY \
+  -e ANTHROPIC_ACCESS_TOKEN \
   -e CLAWBORRATOR_TOKEN \
   -e CLAWBORRATOR_HUB_URL \
   -e GIT_USER_EMAIL \

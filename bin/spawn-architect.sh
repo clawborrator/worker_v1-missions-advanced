@@ -48,7 +48,16 @@ IMAGE="${ARCHITECT_IMAGE:-ladder99/clawborrator-worker:latest}"
 # `-e VAR` pass-through (no value) instead of `--env-file <path>`
 # so we don't need the host's mode-600 spawn-env file to be readable
 # from inside the orchestrator container.
-: "${CLAUDE_CODE_OAUTH_TOKEN:?not set in orchestrator env}"
+# Anthropic auth: at least one of three must be set. Worker image
+# picks whichever is present (preferred order: OAUTH > API_KEY >
+# ACCESS_TOKEN). API_KEY disables clawborrator channels though,
+# which breaks submit_handoff — the orchestrator's playbook check
+# warns on that case.
+if [[ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" && -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_ACCESS_TOKEN:-}" ]]; then
+  echo "error: no Anthropic auth in env (need one of CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, ANTHROPIC_ACCESS_TOKEN)" >&2
+  exit 2
+fi
+
 : "${CLAWBORRATOR_TOKEN:?not set in orchestrator env}"
 : "${CLAWBORRATOR_HUB_URL:?not set in orchestrator env}"
 : "${GIT_USER_EMAIL:?not set in orchestrator env}"
@@ -70,6 +79,8 @@ echo "spawning $NAME (mission=$MISSION_ID, planning-docs=/workspace/repo/$PLANNI
 exec docker run -dt --rm \
   --name "$NAME" \
   -e CLAUDE_CODE_OAUTH_TOKEN \
+  -e ANTHROPIC_API_KEY \
+  -e ANTHROPIC_ACCESS_TOKEN \
   -e CLAWBORRATOR_TOKEN \
   -e CLAWBORRATOR_HUB_URL \
   -e GIT_USER_EMAIL \
