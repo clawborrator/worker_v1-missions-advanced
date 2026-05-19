@@ -35,10 +35,31 @@ mission if the target repo uses different folder names.
 
 ## Prerequisite
 
-`~/.clawborrator-spawn.env` exists on this host (mode 600)
-containing `CLAWBORRATOR_TOKEN` + `CLAUDE_CODE_OAUTH_TOKEN` +
-`CLAWBORRATOR_HUB_URL`. If absent, halt and ask the operator. Do
-not invent values.
+Your own environment must have the spawn-env vars already loaded.
+The operator launches your container with
+`docker run --env-file ~/.clawborrator-spawn.env`, which the host
+shell parses and injects into your env at startup. You do NOT
+need to (and CANNOT — the file isn't bind-mounted) read the host
+file directly.
+
+Required vars in your environment:
+
+- `CLAUDE_CODE_OAUTH_TOKEN`
+- `CLAWBORRATOR_TOKEN`
+- `CLAWBORRATOR_HUB_URL`
+- `REPO_PAT` (used by spawned workers for git push)
+- `GIT_USER_EMAIL`
+- `GIT_USER_NAME`
+
+Verify all six are set: `printenv | grep -E '^(CLAUDE_CODE|CLAWBORRATOR|REPO_PAT|GIT_USER)'`.
+If any is unset, halt and ask the operator to relaunch the
+orchestrator with a properly populated `--env-file`. Do not
+invent values.
+
+When you spawn workers via `/playbook/bin/spawn-*.sh`, those
+scripts inherit your env and use `docker run -e VAR` (no value)
+to push the same vars into the spawned worker. No file access
+required on either side.
 
 ## Phase 0: ingest
 
