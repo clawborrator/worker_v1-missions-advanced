@@ -38,24 +38,20 @@ REVISION_NOTES="${REVISION_NOTES:-(no revisions)}"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${ARCHITECT_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# Note: SPAWN_ENV is a HOST path (docker daemon resolves bind paths
+# from host fs). When run inside an orchestrator container, a local
+# [[ -f ]] check would always fail — skip it. docker run errors
+# clearly if the path is wrong.
 
-PROMPT="$(PLANNING_DOCS_SUBPATH="$PLANNING_DOCS_SUBPATH" python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{REPO_URL}}", os.environ["REPO_URL"])
-  .replace("{{PLANNING_DOCS_PATH}}", "/workspace/repo/" + os.environ["PLANNING_DOCS_SUBPATH"])
-  .replace("{{GOAL_SUMMARY}}", os.environ["GOAL_SUMMARY"])
-  .replace("{{REVISION_NOTES}}", os.environ["REVISION_NOTES"]))
-print(out, end="")
-PYEOF
-)"
+PLANNING_DOCS_PATH="/workspace/repo/$PLANNING_DOCS_SUBPATH"
+
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{REPO_URL}}"/$REPO_URL}"
+PROMPT="${PROMPT//"{{PLANNING_DOCS_PATH}}"/$PLANNING_DOCS_PATH}"
+PROMPT="${PROMPT//"{{GOAL_SUMMARY}}"/$GOAL_SUMMARY}"
+PROMPT="${PROMPT//"{{REVISION_NOTES}}"/$REVISION_NOTES}"
 
 NAME="mission-architect-${MISSION_ID}-$(date +%s)"
 

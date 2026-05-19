@@ -34,25 +34,16 @@ TEMPLATE="$SCRIPT_DIR/templates/journalist-prompt.tmpl"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${JOURNALIST_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
 ISO_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-PROMPT="$(ISO8601_TS="$ISO_TS" PHASE="$PHASE" python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{PHASE}}", os.environ["PHASE"])
-  .replace("{{HANDOFFS_JSON_PATHS}}", os.environ["HANDOFFS_JSON_PATHS"])
-  .replace("{{ISO8601_TS}}", os.environ["ISO8601_TS"]))
-print(out, end="")
-PYEOF
-)"
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{PHASE}}"/$PHASE}"
+PROMPT="${PROMPT//"{{HANDOFFS_JSON_PATHS}}"/$HANDOFFS_JSON_PATHS}"
+PROMPT="${PROMPT//"{{ISO8601_TS}}"/$ISO_TS}"
 
 NAME="mission-journalist-${MISSION_ID}-${PHASE}-$(date +%s)"
 

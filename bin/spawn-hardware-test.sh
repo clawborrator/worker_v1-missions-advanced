@@ -52,24 +52,17 @@ fi
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 NETWORK_MODE="${NETWORK_MODE:-host}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
-PROMPT="$(python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{INTEGRATED_COMMIT}}", os.environ["INTEGRATED_COMMIT"])
-  .replace("{{APP_START_CMD}}", os.environ["APP_START_CMD"])
-  .replace("{{HARDWARE_CONFIG_PATH}}", "/workspace/hardware-config")
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"]))
-print(out, end="")
-PYEOF
-)"
+HARDWARE_CONFIG_CONTAINER_PATH="/workspace/hardware-config"
+
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{INTEGRATED_COMMIT}}"/$INTEGRATED_COMMIT}"
+PROMPT="${PROMPT//"{{APP_START_CMD}}"/$APP_START_CMD}"
+PROMPT="${PROMPT//"{{HARDWARE_CONFIG_PATH}}"/$HARDWARE_CONFIG_CONTAINER_PATH}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
 
 NAME="mission-hardware-test-${MISSION_ID}-$(date +%s)"
 

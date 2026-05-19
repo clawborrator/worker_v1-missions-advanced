@@ -25,20 +25,14 @@ TEMPLATE="$SCRIPT_DIR/templates/usertest-prompt.tmpl"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${USERTEST_IMAGE:-ladder99/clawborrator-worker-playwright:latest}"
 
-PROMPT="$(python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{FEATURE_ID}}", os.environ["FEATURE_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{COMMIT_SHA}}", os.environ["COMMIT_SHA"])
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"])
-  .replace("{{APP_START_CMD}}", os.environ["APP_START_CMD"])
-  .replace("{{APP_URL}}", os.environ["APP_URL"]))
-print(out, end="")
-PYEOF
-)"
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{FEATURE_ID}}"/$FEATURE_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{COMMIT_SHA}}"/$COMMIT_SHA}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
+PROMPT="${PROMPT//"{{APP_START_CMD}}"/$APP_START_CMD}"
+PROMPT="${PROMPT//"{{APP_URL}}"/$APP_URL}"
 
 NAME="mission-usertest-${FEATURE_ID}-$(date +%s)"
 

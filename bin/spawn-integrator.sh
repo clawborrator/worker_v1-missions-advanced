@@ -42,24 +42,15 @@ TEMPLATE="$SCRIPT_DIR/templates/integrator-prompt.tmpl"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${INTEGRATOR_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
-PROMPT="$(python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{COMPLETED_MODULES}}", os.environ["COMPLETED_MODULES"])
-  .replace("{{ENTRY_POINT_PATH}}", os.environ["ENTRY_POINT_PATH"])
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"])
-  .replace("{{UPSTREAM_ARTIFACTS}}", os.environ["UPSTREAM_ARTIFACTS"]))
-print(out, end="")
-PYEOF
-)"
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{COMPLETED_MODULES}}"/$COMPLETED_MODULES}"
+PROMPT="${PROMPT//"{{ENTRY_POINT_PATH}}"/$ENTRY_POINT_PATH}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
+PROMPT="${PROMPT//"{{UPSTREAM_ARTIFACTS}}"/$UPSTREAM_ARTIFACTS}"
 
 NAME="mission-integrator-${MISSION_ID}-$(date +%s)"
 

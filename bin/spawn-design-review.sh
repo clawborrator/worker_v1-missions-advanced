@@ -42,24 +42,17 @@ fi
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${DESIGN_REVIEW_IMAGE:-ladder99/clawborrator-worker-playwright:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
-PROMPT="$(python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{DESIGN_SPEC_PATH}}", "/workspace/design-spec.md")
-  .replace("{{APP_START_CMD}}", os.environ["APP_START_CMD"])
-  .replace("{{APP_URL}}", os.environ["APP_URL"])
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"]))
-print(out, end="")
-PYEOF
-)"
+DESIGN_SPEC_CONTAINER_PATH="/workspace/design-spec.md"
+
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{DESIGN_SPEC_PATH}}"/$DESIGN_SPEC_CONTAINER_PATH}"
+PROMPT="${PROMPT//"{{APP_START_CMD}}"/$APP_START_CMD}"
+PROMPT="${PROMPT//"{{APP_URL}}"/$APP_URL}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
 
 NAME="mission-design-review-${MISSION_ID}-$(date +%s)"
 

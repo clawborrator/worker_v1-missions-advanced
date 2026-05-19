@@ -53,7 +53,10 @@ before any code is written.
    - non-default `planning-docs/` or `scaffold-libs/` subpath
      within the target repo, if any (optional)
 2. **Initialize mission state.** In your own /workspace/repo (the
-   target repo), create `.mission/state.json`:
+   target repo), `git pull --rebase origin main` first to absorb
+   any commits that landed since the entrypoint cloned (the
+   operator may have pushed a README update while you were
+   starting). Then create `.mission/state.json`:
    ```json
    {
      "missionId":    "<id>",

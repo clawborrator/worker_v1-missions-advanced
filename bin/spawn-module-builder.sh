@@ -47,28 +47,19 @@ MODULE_SCAFFOLDS="${MODULE_SCAFFOLDS:-(none)}"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${MODULE_BUILDER_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
-PROMPT="$(MODULE_ID="$MODULE_ID" python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{MODULE_ID}}", os.environ["MODULE_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{MODULE_PURPOSE}}", os.environ["MODULE_PURPOSE"])
-  .replace("{{MODULE_PATH}}", os.environ["MODULE_PATH"])
-  .replace("{{MODULE_DEPS}}", os.environ["MODULE_DEPS"])
-  .replace("{{MODULE_SCAFFOLDS}}", os.environ["MODULE_SCAFFOLDS"])
-  .replace("{{MODULE_PUBLIC_API}}", os.environ["MODULE_PUBLIC_API"])
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"])
-  .replace("{{UPSTREAM_ARTIFACTS}}", os.environ["UPSTREAM_ARTIFACTS"]))
-print(out, end="")
-PYEOF
-)"
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{MODULE_ID}}"/$MODULE_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{MODULE_PURPOSE}}"/$MODULE_PURPOSE}"
+PROMPT="${PROMPT//"{{MODULE_PATH}}"/$MODULE_PATH}"
+PROMPT="${PROMPT//"{{MODULE_DEPS}}"/$MODULE_DEPS}"
+PROMPT="${PROMPT//"{{MODULE_SCAFFOLDS}}"/$MODULE_SCAFFOLDS}"
+PROMPT="${PROMPT//"{{MODULE_PUBLIC_API}}"/$MODULE_PUBLIC_API}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
+PROMPT="${PROMPT//"{{UPSTREAM_ARTIFACTS}}"/$UPSTREAM_ARTIFACTS}"
 
 NAME="mission-module-${MODULE_ID}-$(date +%s)"
 

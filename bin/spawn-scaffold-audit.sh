@@ -35,23 +35,16 @@ OPERATOR_NOTES="${OPERATOR_NOTES:-(none)}"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${SCAFFOLD_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found" >&2
-  exit 2
-fi
+# SPAWN_ENV is a host path; skip local existence check.
 
-PROMPT="$(SCAFFOLD_LIBS_SUBPATH="$SCAFFOLD_LIBS_SUBPATH" python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{REPO_URL}}", os.environ["REPO_URL"])
-  .replace("{{SCAFFOLD_LIBS_PATH}}", "/workspace/repo/" + os.environ["SCAFFOLD_LIBS_SUBPATH"])
-  .replace("{{OPERATOR_NOTES}}", os.environ["OPERATOR_NOTES"]))
-print(out, end="")
-PYEOF
-)"
+SCAFFOLD_LIBS_PATH="/workspace/repo/$SCAFFOLD_LIBS_SUBPATH"
+
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{REPO_URL}}"/$REPO_URL}"
+PROMPT="${PROMPT//"{{SCAFFOLD_LIBS_PATH}}"/$SCAFFOLD_LIBS_PATH}"
+PROMPT="${PROMPT//"{{OPERATOR_NOTES}}"/$OPERATOR_NOTES}"
 
 NAME="mission-scaffold-audit-${MISSION_ID}-$(date +%s)"
 

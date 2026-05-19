@@ -36,25 +36,21 @@ TEMPLATE="$SCRIPT_DIR/templates/worker-prompt.tmpl"
 SPAWN_ENV="${CLAW_SPAWN_ENV:-$HOME/.clawborrator-spawn.env}"
 IMAGE="${PROBE_IMAGE:-ladder99/clawborrator-worker:latest}"
 
-if [[ ! -f "$SPAWN_ENV" ]]; then
-  echo "error: $SPAWN_ENV not found; see README.md" >&2
-  exit 2
-fi
+# Note: we do NOT check `[[ -f "$SPAWN_ENV" ]]` here. When this
+# script runs inside an orchestrator container, $SPAWN_ENV is a
+# HOST-side path that docker daemon resolves separately. The local
+# fs check would always fail. If the path is wrong, docker run
+# below errors clearly.
 
-# Render the prompt template. Use a Python heredoc to avoid sed
-# escaping pain with multi-line FEATURE_SPEC / ASSERTIONS values.
-PROMPT="$(python3 - <<PYEOF
-import os
-tpl = open("$TEMPLATE").read()
-out = (tpl
-  .replace("{{MISSION_ID}}", os.environ["MISSION_ID"])
-  .replace("{{FEATURE_ID}}", os.environ["FEATURE_ID"])
-  .replace("{{ORCH_ROUTING}}", os.environ["ORCH_ROUTING"])
-  .replace("{{FEATURE_SPEC}}", os.environ["FEATURE_SPEC"])
-  .replace("{{ASSERTIONS}}", os.environ["ASSERTIONS"]))
-print(out, end="")
-PYEOF
-)"
+# Render the prompt template using bash builtin substitution.
+# Pure bash, no python/perl dependency. Placeholders are literal
+# {{NAME}} strings, no regex; safe substitution.
+PROMPT=$(< "$TEMPLATE")
+PROMPT="${PROMPT//"{{MISSION_ID}}"/$MISSION_ID}"
+PROMPT="${PROMPT//"{{FEATURE_ID}}"/$FEATURE_ID}"
+PROMPT="${PROMPT//"{{ORCH_ROUTING}}"/$ORCH_ROUTING}"
+PROMPT="${PROMPT//"{{FEATURE_SPEC}}"/$FEATURE_SPEC}"
+PROMPT="${PROMPT//"{{ASSERTIONS}}"/$ASSERTIONS}"
 
 NAME="mission-worker-${FEATURE_ID}-$(date +%s)"
 
