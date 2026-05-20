@@ -67,6 +67,12 @@ docker run -dt --rm \
 Notes:
 - `REPO_URL` = target repo. The orchestrator's `/workspace/repo`
   IS the working repo where `.mission/state.json` lives.
+- `MODEL` (e.g. `sonnet`, `opus`, `haiku`) sets the orchestrator's
+  own model AND propagates to every spawned subagent — the spawn
+  scripts read `$MODEL` from the orchestrator's env and pass it
+  through. Set it once here and the whole mission runs on that
+  model. If unset, subagents fall back to per-role defaults
+  (`opus` for builders/validators, `haiku` for journalist).
 - `/playbook` = host clone of this toolkit. Read-only.
 - `/spawn.env` = host's spawn-env file. Spawn scripts source this
   to re-populate Anthropic auth vars that Claude Code strips from

@@ -90,7 +90,7 @@ exec docker run -dt --rm \
   -e GIT_USER_NAME \
   -e CLAWBORRATOR_EPHEMERAL=1 \
   -e CLAWBORRATOR_ROUTING_NAME="$NAME" \
-  -e MODEL=opus \
+  -e MODEL="${MODEL:-opus}" \
   -e CLAUDE_SKIP_PERMISSIONS=1 \
   -e REPO_URL="$REPO_URL" \
   -e REPO_PAT="$REPO_PAT" \
